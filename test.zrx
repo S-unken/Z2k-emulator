@@ -9,6 +9,7 @@
 
         <bottom>
             <print=("Hello,world")></print>
+            <print=("This,is,intresting")></print>
         </bottom>
 
     </program>
