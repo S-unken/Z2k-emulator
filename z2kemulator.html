@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>z2kemulator</title>
+    <title>z2kemulator (Zurix)</title>
     <style>
         body {
             font-family: system-ui, sans-serif;
@@ -11,9 +11,7 @@
             margin: 0;
             padding: 20px;
         }
-        h1 {
-            margin-top: 0;
-        }
+        h1 { margin-top: 0; }
         .panel {
             background: #1b1b1b;
             border-radius: 8px;
@@ -34,9 +32,7 @@
             background: #555;
             cursor: default;
         }
-        input[type="file"] {
-            color: #ccc;
-        }
+        input[type="file"] { color: #ccc; }
         pre {
             background: #050505;
             padding: 10px;
@@ -51,7 +47,7 @@
     </style>
 </head>
 <body>
-    <h1>z2kemulator</h1>
+    <h1>z2kemulator (Zurix)</h1>
 
     <div class="panel">
         <p><strong>Load a .zrx file</strong></p>
@@ -97,8 +93,10 @@
             try {
                 const parsed = parseZRX(zrxText);
                 debugEl.textContent =
+                    'File structure: ' + parsed.structure + '\n' +
+                    'Mode: ' + parsed.mode + '\n' +
                     'Print class: ' + parsed.printClass + '\n' +
-                    'Print commands:\n' +
+                    'Print lines:\n' +
                     parsed.prints.map((p, i) => `${i + 1}. ${p}`).join('\n');
 
                 openRuntimeWindow(parsed);
@@ -107,58 +105,76 @@
             }
         });
 
-        // --- Simple Zurix parser ---
+        // --- Zurix parser based on your syntax manual ---
 
         function parseZRX(text) {
-            // Basic sanity check for structure=("program")
-            if (!text.includes('<file structure=("program")>')) {
-                throw new Error('Missing <file structure=("program")> tag.');
+            // file structure=("program"|"game")
+            const fileMatch = text.match(/<file\s+structure=\("([^"]+)"\)>\s*([\s\S]*?)<\/file>/i);
+            if (!fileMatch) {
+                throw new Error('Missing or invalid <file structure=("...")> ... </file>.');
+            }
+            const structure = fileMatch[1].trim(); // program or game
+            const innerFile = fileMatch[2];
+
+            if (structure !== 'program' && structure !== 'game') {
+                throw new Error('Unknown file structure: ' + structure);
             }
 
-            // Extract <top> ... </top>
-            const topMatch = text.match(/<top>([\s\S]*?)<\/top>/i);
+            // <program> or <game>
+            let modeTag = structure === 'program' ? 'program' : 'game';
+            const modeMatch = innerFile.match(new RegExp('<' + modeTag + '>([\\s\\S]*?)<\\/' + modeTag + '>', 'i'));
+            if (!modeMatch) {
+                throw new Error('Missing <' + modeTag + '> ... </' + modeTag + '> block.');
+            }
+            const modeContent = modeMatch[1];
+
+            // <top> ... </top>
+            const topMatch = modeContent.match(/<top>([\s\S]*?)<\/top>/i);
             if (!topMatch) {
-                throw new Error('Missing <top> section.');
+                throw new Error('Missing <top> ... </top>.');
             }
             const topContent = topMatch[1];
 
-            // Extract <bottom> ... </bottom>
-            const bottomMatch = text.match(/<bottom>([\s\S]*?)<\/bottom>/i);
+            // <bottom> ... </bottom>
+            const bottomMatch = modeContent.match(/<bottom>([\s\S]*?)<\/bottom>/i);
             if (!bottomMatch) {
-                throw new Error('Missing <bottom> section.');
+                throw new Error('Missing <bottom> ... </bottom>.');
             }
             const bottomContent = bottomMatch[1];
 
-            // Inside <top>, find <preset> ... </preset>
+            // <preset> ... </preset> inside top
             const presetMatch = topContent.match(/<preset>([\s\S]*?)<\/preset>/i);
             if (!presetMatch) {
-                throw new Error('Missing <preset> in <top>.');
+                throw new Error('Missing <preset> ... </preset> in <top>.');
             }
             const presetContent = presetMatch[1];
 
-            // Find print class=("type") or class=("still")
+            // <print class=("still"|"type")></print> inside preset
             const classMatch = presetContent.match(/<print\s+class=\("([^"]+)"\)\s*><\/print>/i);
             if (!classMatch) {
                 throw new Error('Missing <print class=("...")></print> in <preset>.');
             }
             const printClass = classMatch[1].trim();
-            if (printClass !== 'type' && printClass !== 'still') {
+            if (printClass !== 'still' && printClass !== 'type') {
                 throw new Error('Unknown print class: ' + printClass);
             }
 
-            // Find all <print=("...")></print> in bottom
-            const printRegex = /<print=\("([^"]*)"\)\s*><\/print>/gi;
+            // <print> ... </print> in bottom (program-exclusive tag)
+            const printRegex = /<print>([\s\S]*?)<\/print>/gi;
             const prints = [];
             let m;
             while ((m = printRegex.exec(bottomContent)) !== null) {
-                prints.push(m[1]);
+                // trim inner text
+                prints.push(m[1].trim());
             }
 
             if (prints.length === 0) {
-                throw new Error('No <print=("...")></print> commands found in <bottom>.');
+                throw new Error('No <print>...</print> tags found in <bottom>.');
             }
 
             return {
+                structure,
+                mode: modeTag,
                 printClass,
                 prints
             };
@@ -178,7 +194,7 @@
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
-                    <title>Zurix Runtime</title>
+                    <title>Zurix Runtime (${parsed.mode})</title>
                     <style>
                         body {
                             background: #000;
