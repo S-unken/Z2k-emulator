@@ -1,1 +1,15 @@
+<file structure=("program")>
+    <program>
 
+        <top>
+            <preset>
+                <print class=("type")></print>
+            </preset>
+        </top>
+
+        <bottom>
+            <print=("Hello,world")></print>
+        </bottom>
+
+    </program>
+</file>
