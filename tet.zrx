@@ -1,0 +1,16 @@
+<file structure=("program")>
+    <program>
+
+        <top>
+            <preset>
+                <print class=("type")></print>
+            </preset>
+        </top>
+
+        <bottom>
+            <print>Hello,world</print>
+            <print>This is Zurix using the syntax manual.</print>
+        </bottom>
+
+    </program>
+</file>
