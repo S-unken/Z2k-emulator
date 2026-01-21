@@ -8,8 +8,7 @@
         </top>
 
         <bottom>
-            <print=("Hello,world")></print>
-            <print=("This,is,intresting")></print>
+            <print=("Hello,world,this,is,intresting")></print>
         </bottom>
 
     </program>
